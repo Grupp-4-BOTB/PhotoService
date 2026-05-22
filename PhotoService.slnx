@@ -1,3 +1,6 @@
 <Solution>
-  <Project Path="PhotoService.API/PhotoService.API.csproj" />
+  <Project Path="PhotoService.Application/PhotoService.Application.csproj" />
+  <Project Path="PhotoService.Domain/PhotoService.Domain.csproj" />
+  <Project Path="PhotoService.Infrastructure/PhotoService.Infrastructure.csproj" />
+  <Project Path="PhotoService.Presentation.API/PhotoService.Presentation.API.csproj" />
 </Solution>
