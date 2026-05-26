@@ -11,5 +11,10 @@ public class PhotoServiceDbContext : DbContext
         
     }
 
-    public DbSet<Photo>
+    public DbSet<Photo> Photos => Set<Photo>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(PhotoServiceDbContext).Assembly);
+    }
 }
