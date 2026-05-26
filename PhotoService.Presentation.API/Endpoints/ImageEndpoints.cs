@@ -1,5 +1,7 @@
 ﻿using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using PhotoService.Application.Services;
+using PhotoService.Domain.ValueObjects;
 using PhotoService.Presentation.API.Dtos;
 
 namespace PhotoService.Presentation.API.Endpoints;
@@ -18,60 +20,40 @@ public static class ImageEndpoints
             .Produces<UploadImageResult>(StatusCodes.Status201Created)
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status400BadRequest);
+
+        group.MapGet("/{id:guid}", GetByIdAsync)
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
+        group.MapDelete("/{id:guid}", DeleteByIdAsync")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status404NotFound);
+
     }
 
-    private static async Task<IResult> UploadImageAsync(IFormFile file, BlobServiceClient client, IConfiguration config, CancellationToken ct)
+    private static async Task<IResult> UploadImageAsync(IFormFile file, PhotoAppService service, CancellationToken ct)
     {
-        if (file.Length == 0)
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["file"] = ["A file must be provided."]
-            });
+        var ownerId = new OwnerId("test-user");
 
-        var allowedContentTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        var photo = await service.UploadAsync(ownerId, file, ct);
+
+        return Results.Created($"/api/images/{photo.Id.Value}", photo);
+    }
+
+    private static async Task<IResult> GetByIdAsync(Guid id, PhotoAppService service, CancellationToken ct)
+    {
+        var photo = await service.GetByIdAsync(id, ct);
+
+        if (photo is null)
         {
-            "image/jpeg",
-            "image/jpg",
-            "image/webp",
-            "image/png",
-        };
+            return Results.NotFound();
+        }
+        return Results.Ok(photo);
+    }
 
-        if(!allowedContentTypes.Contains(file.ContentType))
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["file"] = ["Only JPEG, JPG, WEBP and PNG images are allowed."]
-            });
-
-        var containerName = config["BlobStorageContainer:ImageContainerName"]
-            ?? throw new InvalidOperationException("BlobStorageContainer:ImageContainerName is missing.");
-
-        var containerClient = client.GetBlobContainerClient(containerName);
-        await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: ct);
-
-        var extension = Path.GetExtension(file.FileName);
-        var uniqueFileName = $"{Guid.NewGuid()}{extension}";
-
-        var blobClient = containerClient.GetBlobClient(uniqueFileName);
-        await using var stream = file.OpenReadStream();
-
-        await blobClient.UploadAsync(stream, new BlobUploadOptions 
-        { 
-            HttpHeaders = new BlobHttpHeaders 
-            { 
-                ContentType = file.ContentType,
-                CacheControl = "public, max-age=31536000"
-            } 
-        
-        }, cancellationToken: ct);
-
-        var result = UploadImageResult.Success
-            (
-                uniqueFileName,
-                blobClient.Uri.ToString(),
-                file.ContentType,
-                file.Length
-            );
-
-        return Results.Created(result.Url, result);
+    private static async Task<IResult> DeleteAsync(Guid id, PhotoAppService service, CancellationToken ct)
+    {
+        await service.DeleteAsync(id, ct);
+        return Results.NoContent();
     }
 }
