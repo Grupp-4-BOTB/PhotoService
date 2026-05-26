@@ -11,4 +11,9 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\PhotoService.Application\PhotoService.Application.csproj" />
+    <ProjectReference Include="..\PhotoService.Infrastructure\PhotoService.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>
