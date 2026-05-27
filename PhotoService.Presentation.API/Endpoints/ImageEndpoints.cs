@@ -21,11 +21,18 @@ public static class ImageEndpoints
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status400BadRequest);
 
+        group.MapPut("/{id:guid}", ReplaceAsync)
+            .DisableAntiforgery()
+            .Accepts<IFormFile>("multipart/form-data")
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
+
         group.MapGet("/{id:guid}", GetByIdAsync)
             .Produces(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
-        group.MapDelete("/{id:guid}", DeleteByIdAsync")
+        group.MapDelete("/{id:guid}", DeleteAsync)
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status404NotFound);
 
@@ -55,5 +62,18 @@ public static class ImageEndpoints
     {
         await service.DeleteAsync(id, ct);
         return Results.NoContent();
+    }
+
+    private static async Task<IResult> ReplaceAsync(Guid id, IFormFile file, PhotoAppService service, CancellationToken ct)
+    {
+        try
+        {
+            var photo = await service.ReplaceAsync(id, file, ct);
+            return Results.Ok(photo);
+        }
+        catch (KeyNotFoundException)
+        {
+            return Results.NotFound();
+        }
     }
 }
