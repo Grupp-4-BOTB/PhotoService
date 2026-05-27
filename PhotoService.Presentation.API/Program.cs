@@ -1,19 +1,14 @@
 using Azure.Storage.Blobs;
 using PhotoService.Application;
+using PhotoService.Infrastructure;
 using PhotoService.Presentation.API.Endpoints;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services.AddSingleton(_ =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("AzureBlobStorage")
-        ?? throw new InvalidOperationException("AzureBlobStorage conntectionString is missing");
-
-    return new BlobServiceClient(connectionString);
-});
 
 
 

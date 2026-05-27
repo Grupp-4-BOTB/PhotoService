@@ -50,4 +50,24 @@ public class Photo
             UploadedAt = DateTime.UtcNow
         };
     }
+
+    public void Update(string fileName, string contentType, long sizeInBytes, string url)
+    {
+        if (!AllowedContentTypes.Contains(contentType))
+            throw new DomainException("Only JPEG, PNG, and WEBP formats are allowed.");
+
+        if(string.IsNullOrWhiteSpace(url))
+            throw new DomainException("URL cannot be empty.");
+
+        if (sizeInBytes > MaxSizeInBytes)
+            throw new DomainException("File size cannot exceed 5 MB.");
+
+        if (string.IsNullOrWhiteSpace(fileName))
+            throw new DomainException("File name cannot be empty.");
+
+        FileName = fileName;
+        ContentType = contentType;
+        SizeInBytes = sizeInBytes;
+        Url = url;
+    }
 }

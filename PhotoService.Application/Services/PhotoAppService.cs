@@ -18,8 +18,8 @@ public class PhotoAppService
     {
         _repository = repository;
         _blobServiceClient = blobServiceClient;
-        _containerName = configuration["AzureBlobStorage:ImageContainerName"]
-            ?? throw new InvalidOperationException("AzureBlobStorage:ImageContainerName is missing");
+        _containerName = configuration["BlobStorageContainer:ImageContainerName"]
+            ?? throw new InvalidOperationException("BlobStorageContainer:ImageContainerName is missing");
     }
 
     public async Task<Photo> UploadAsync(OwnerId ownerId, IFormFile file, CancellationToken ct = default)
@@ -67,5 +67,41 @@ public class PhotoAppService
             throw new KeyNotFoundException($"Photo with id {id} was not found.");
 
         await _repository.DeleteAsync(photo, ct);
+    }
+
+    public async Task<Photo> ReplaceAsync(Guid id, IFormFile file, CancellationToken ct = default)
+    {
+        var photoId = new PhotoId(id);
+        var photo = await _repository.GetByIdAsync(photoId, ct);
+
+        if (photo is null)
+            throw new KeyNotFoundException($"Photo with id {id} was not found.");
+
+        var containerClient= _blobServiceClient.GetBlobContainerClient(_containerName);
+        var oldBlobClient = containerClient.GetBlobClient(photo.FileName);
+        await oldBlobClient.DeleteIfExistsAsync(cancellationToken: ct);
+        // denna delen raderar den gamla filen från blob storage.
+
+        var extension = Path.GetExtension(file.FileName);
+        var uniqueFileName = $"{Guid.NewGuid()}{extension}";
+        var newBlobClient = containerClient.GetBlobClient(uniqueFileName);
+        await using var stream = file.OpenReadStream();
+
+        await newBlobClient.UploadAsync(stream, new BlobUploadOptions
+        {
+            HttpHeaders = new BlobHttpHeaders
+            {
+                ContentType = file.ContentType,
+                CacheControl = "public, max-age=31536000"
+            }
+        }, cancellationToken: ct);
+        // denna delen laddar upp den nya filen till blob storage.
+
+        photo.Update(uniqueFileName, file.ContentType, file.Length, newBlobClient.Uri.ToString());
+        await _repository.UpdateAsync(photo, ct);
+        // denna delen uppdaterar photo entiteten i databasen.
+
+        return photo;
+        //Sammanfattning: metoden tar bort den gamla filen från min blobstorage, laddare upp den nya filen och uppdaterar photo entiteten i databasen med den nya filens info.
     }
 }
