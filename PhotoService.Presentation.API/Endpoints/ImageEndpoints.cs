@@ -1,6 +1,7 @@
 ﻿using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using PhotoService.Application.Services;
+using PhotoService.Domain.Exceptions;
 using PhotoService.Domain.ValueObjects;
 using PhotoService.Presentation.API.Dtos;
 
@@ -40,11 +41,27 @@ public static class ImageEndpoints
 
     private static async Task<IResult> UploadImageAsync(IFormFile file, PhotoAppService service, CancellationToken ct)
     {
+        if (file.Length == 0)
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["file"] = ["A file must be provided"]
+            });
+
         var ownerId = new OwnerId("test-user");
 
-        var photo = await service.UploadAsync(ownerId, file, ct);
-
-        return Results.Created($"/api/images/{photo.Id.Value}", photo);
+        try
+        {
+            var photo = await service.UploadAsync(ownerId, file, ct);
+            var result = UploadImageResult.Success(photo.Id.Value, photo.FileName, photo.Url, photo.ContentType, photo.SizeInBytes);
+            return Results.Created(result.Url!, result);
+        }
+        catch(DomainException ex)
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["file"] = [ex.Message]
+            });
+        }
     }
 
     private static async Task<IResult> GetByIdAsync(Guid id, PhotoAppService service, CancellationToken ct)

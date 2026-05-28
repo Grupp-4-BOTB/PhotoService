@@ -3,15 +3,16 @@
 public sealed record UploadImageResult 
 (
     bool Succeeded,
+    Guid? Id,
     string? FileName,
     string? Url,
     string? ContentType,
     long Size
 )
 {
-    public static UploadImageResult Success(string fileName, string url, string contentType, long size)
-        => new(true, fileName, url, contentType, size);
+    public static UploadImageResult Success(Guid id,string fileName, string url, string contentType, long size)
+        => new(true, id, fileName, url, contentType, size);
 
     public static UploadImageResult Failed ()
-        => new(false, null, null, null, 0);
+        => new(false, null, null, null, null, 0);
 }
