@@ -37,6 +37,10 @@ public static class ImageEndpoints
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status404NotFound);
 
+        group.MapGet("/owner/{ownerId}", GetByOwnerIdAsync)
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
+
     }
 
     private static async Task<IResult> UploadImageAsync(IFormFile file, PhotoAppService service, CancellationToken ct)
@@ -92,5 +96,15 @@ public static class ImageEndpoints
         {
             return Results.NotFound();
         }
+    }
+
+    private static async Task<IResult> GetByOwnerIdAsync(string ownerId, PhotoAppService service, CancellationToken ct)
+    {
+        var photo = await service.GetByOwnerIdAsync(ownerId, ct);
+
+        if (photo is null)
+            return Results.NotFound();
+
+        return Results.Ok(photo);
     }
 }

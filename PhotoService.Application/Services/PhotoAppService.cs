@@ -104,4 +104,10 @@ public class PhotoAppService
         return photo;
         //Sammanfattning: metoden tar bort den gamla filen från min blobstorage, laddare upp den nya filen och uppdaterar photo entiteten i databasen med den nya filens info.
     }
+
+    public async Task<Photo?> GetByOwnerIdAsync(string ownerId, CancellationToken ct = default)
+    {
+        var owner = new OwnerId(ownerId);
+        return await _repository.GetByOwnerIdAsync(owner, ct);
+    }
 }
