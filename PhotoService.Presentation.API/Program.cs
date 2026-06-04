@@ -2,8 +2,13 @@ using Azure.Storage.Blobs;
 using PhotoService.Application;
 using PhotoService.Infrastructure;
 using PhotoService.Presentation.API.Endpoints;
+using PhotoService.Presentation.API.Security;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<ApiKeyOption>(builder.Configuration.GetSection(ApiKeyOption.SectionName));
+builder.Services.AddScoped<ApiKeyEndpointFilter>();
+
 
 builder.Services.AddOpenApi();
 builder.Services.AddApplication();
