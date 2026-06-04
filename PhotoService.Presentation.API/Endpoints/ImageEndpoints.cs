@@ -4,6 +4,7 @@ using PhotoService.Application.Services;
 using PhotoService.Domain.Exceptions;
 using PhotoService.Domain.ValueObjects;
 using PhotoService.Presentation.API.Dtos;
+using PhotoService.Presentation.API.Security;
 
 namespace PhotoService.Presentation.API.Endpoints;
 
@@ -13,7 +14,8 @@ public static class ImageEndpoints
     {
         var group = app.MapGroup("/api/images")
             .WithTags("Images")
-            .WithDescription("Upload images to storage.");
+            .WithDescription("Upload images to storage.")
+            .AddEndpointFilter<ApiKeyEndpointFilter>();
 
         group.MapPost("/upload", UploadImageAsync)
             .DisableAntiforgery()
